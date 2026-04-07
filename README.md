@@ -71,19 +71,21 @@ cargo install --path .
 
 ## Shell setup
 
-`tag-rs` writes aliases to a file (default `/tmp/tag_aliases`). Your shell needs to source this file after each run.
+`tag-rs` writes aliases to a file (default `/tmp/tag_aliases_<ppid>`, where `<ppid>` is the parent shell's PID). Your shell needs to source this file after each run.
 
 ### zsh
 
 ```zsh
 if (( $+commands[tag-rs] )); then
   # grep mode (ripgrep)
-  tag() { command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases} 2>/dev/null }
+  tag() { command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$} 2>/dev/null }
   alias rg=tag
 
   # file find mode (fd)
-  tagfd() { TAG_SEARCH_PROG=fd command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases} 2>/dev/null }
+  tagfd() { TAG_SEARCH_PROG=fd command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$} 2>/dev/null }
   alias fd=tagfd
+
+  trap 'rm -f "${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$}"' EXIT
 fi
 ```
 
@@ -92,12 +94,14 @@ fi
 ```bash
 if command -v tag-rs &>/dev/null; then
   # grep mode (ripgrep)
-  tag() { command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases} 2>/dev/null; }
+  tag() { command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$} 2>/dev/null; }
   alias rg=tag
 
   # file find mode (fd)
-  tagfd() { TAG_SEARCH_PROG=fd command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases} 2>/dev/null; }
+  tagfd() { TAG_SEARCH_PROG=fd command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$} 2>/dev/null; }
   alias fd=tagfd
+
+  trap 'rm -f "${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$}"' EXIT
 fi
 ```
 
@@ -105,16 +109,20 @@ fi
 
 ```fish
 function tag
-    set -q TAG_ALIAS_FILE; or set -l TAG_ALIAS_FILE /tmp/tag_aliases
+    set -q TAG_ALIAS_FILE; or set -l TAG_ALIAS_FILE /tmp/tag_aliases_$fish_pid
     command tag-rs $argv; and source $TAG_ALIAS_FILE 2>/dev/null
 end
 alias rg tag
 
 function tagfd
-    set -q TAG_ALIAS_FILE; or set -l TAG_ALIAS_FILE /tmp/tag_aliases
+    set -q TAG_ALIAS_FILE; or set -l TAG_ALIAS_FILE /tmp/tag_aliases_$fish_pid
     TAG_SEARCH_PROG=fd command tag-rs $argv; and source $TAG_ALIAS_FILE 2>/dev/null
 end
 alias fd tagfd
+
+function __tag_cleanup --on-event fish_exit
+    rm -f {$TAG_ALIAS_FILE,/tmp/tag_aliases_$fish_pid}
+end
 ```
 
 To use `ag` instead of `rg`, set `TAG_SEARCH_PROG=ag` and alias `ag` instead of `rg`.
@@ -124,7 +132,7 @@ To use `ag` instead of `rg`, set `TAG_SEARCH_PROG=ag` and alias `ag` instead of 
 | Variable | Default | Description |
 |---|---|---|
 | `TAG_SEARCH_PROG` | `rg` | Search backend: `rg`, `ag`, or `fd` |
-| `TAG_ALIAS_FILE` | `/tmp/tag_aliases` | Path to generated alias file |
+| `TAG_ALIAS_FILE` | `/tmp/tag_aliases_<ppid>` | Path to generated alias file (default includes parent shell PID) |
 | `TAG_ALIAS_PREFIX` | `e` | Prefix for aliases (e.g. `e1`, `e2`) |
 | `TAG_CMD_FMT_STRING` | `vim -c "call cursor({line}, {column})" "{file}"` | Editor command template for grep mode (`rg`/`ag`) |
 | `TAG_CMD_FMT_STRING_FD` | `vim "{file}"` | Editor command template for fd mode |

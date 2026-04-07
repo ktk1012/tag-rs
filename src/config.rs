@@ -38,7 +38,10 @@ impl Config {
 
         let alias_file = env::var("TAG_ALIAS_FILE")
             .map(PathBuf::from)
-            .unwrap_or_else(|_| PathBuf::from("/tmp/tag_aliases"));
+            .unwrap_or_else(|_| {
+                let ppid = std::os::unix::process::parent_id();
+                PathBuf::from(format!("/tmp/tag_aliases_{ppid}"))
+            });
 
         let alias_prefix =
             env::var("TAG_ALIAS_PREFIX").unwrap_or_else(|_| "e".to_string());
