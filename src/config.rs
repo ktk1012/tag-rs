@@ -57,7 +57,7 @@ impl Config {
             disable_tag = true;
         }
 
-        if user_args.is_empty() {
+        if user_args.is_empty() && mode == ModeKind::Grep {
             disable_tag = true;
         }
 
