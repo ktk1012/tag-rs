@@ -5,12 +5,22 @@ Rust rewrite of [tag](https://github.com/aykamko/tag) by [aykamko](https://githu
 `tag-rs` wraps search tools like [ripgrep](https://github.com/BurntSushi/ripgrep), [ag](https://github.com/ggreer/the_silver_searcher), and [fd](https://github.com/sharkdp/fd), tagging each match with a number and generating shell aliases so you can jump to any result instantly.
 
 ```
-$ tag-rs pattern src/
+$ rg pattern src/
 src/main.rs
 [1] 12:5:    let pattern = &args[1];
 [2] 28:9:    if pattern.is_empty() {
 
 $ e1  # opens src/main.rs at line 12, column 5
+```
+
+```
+$ fd -e rs src/
+[1] src/alias.rs
+[2] src/config.rs
+[3] src/main.rs
+[4] src/mode.rs
+
+$ e3  # opens src/main.rs
 ```
 
 ## What's different from tag?
