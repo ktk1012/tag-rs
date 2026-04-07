@@ -17,6 +17,20 @@
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
     in
     {
+      packages = forAllSystems (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in
+        {
+          default = pkgs.rustPlatform.buildRustPackage {
+            pname = "tag-rs";
+            version = "0.1.0";
+            src = ./.;
+            cargoLock.lockFile = ./Cargo.lock;
+          };
+        }
+      );
+
       devShells = forAllSystems (system:
         let
           pkgs = import nixpkgs {

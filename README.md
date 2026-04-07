@@ -31,6 +31,26 @@ $ e3  # opens src/main.rs
 
 ## Installation
 
+### Nix flake
+
+Add as a flake input and use the package output:
+
+```nix
+# flake.nix
+{
+  inputs.tag-rs.url = "github:your-user/tag-rs";
+
+  # then in home-manager, nix-darwin, or NixOS config:
+  # tag-rs.packages.${system}.default
+}
+```
+
+Or run directly without installing:
+
+```sh
+nix run github:your-user/tag-rs -- pattern src/
+```
+
 ### From source (with Nix)
 
 ```sh
