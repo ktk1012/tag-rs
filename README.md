@@ -38,7 +38,7 @@ Add as a flake input and use the package output:
 ```nix
 # flake.nix
 {
-  inputs.tag-rs.url = "github:your-user/tag-rs";
+  inputs.tag-rs.url = "github:ktk1012/tag-rs";
 
   # then in home-manager, nix-darwin, or NixOS config:
   # tag-rs.packages.${system}.default
@@ -48,13 +48,13 @@ Add as a flake input and use the package output:
 Or run directly without installing:
 
 ```sh
-nix run github:your-user/tag-rs -- pattern src/
+nix run github:ktk1012/tag-rs -- pattern src/
 ```
 
 ### From source (with Nix)
 
 ```sh
-git clone https://github.com/your-user/tag-rs.git
+git clone https://github.com/ktk1012/tag-rs.git
 cd tag-rs
 nix develop -c cargo install --path .
 ```
@@ -64,7 +64,7 @@ nix develop -c cargo install --path .
 Requires Rust 1.85+.
 
 ```sh
-git clone https://github.com/your-user/tag-rs.git
+git clone https://github.com/ktk1012/tag-rs.git
 cd tag-rs
 cargo install --path .
 ```
