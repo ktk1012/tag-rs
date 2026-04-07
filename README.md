@@ -126,12 +126,10 @@ To use `ag` instead of `rg`, set `TAG_SEARCH_PROG=ag` and alias `ag` instead of 
 | `TAG_SEARCH_PROG` | `rg` | Search backend: `rg`, `ag`, or `fd` |
 | `TAG_ALIAS_FILE` | `/tmp/tag_aliases` | Path to generated alias file |
 | `TAG_ALIAS_PREFIX` | `e` | Prefix for aliases (e.g. `e1`, `e2`) |
-| `TAG_CMD_FMT_STRING` | _(mode default)_ | Template for editor command |
+| `TAG_CMD_FMT_STRING` | `vim -c "call cursor({line}, {column})" "{file}"` | Editor command template for grep mode (`rg`/`ag`) |
+| `TAG_CMD_FMT_STRING_FD` | `vim "{file}"` | Editor command template for fd mode |
 
-Default `TAG_CMD_FMT_STRING` per mode:
-
-- **grep** (`rg`/`ag`): `vim -c "call cursor({line}, {column})" "{file}"`
-- **fd**: `vim "{file}"`
+Template placeholders: `{file}`, `{line}`, `{column}`. Go template syntax from the original tag (`{{.Filename}}`, `{{.LineNumber}}`, `{{.ColumnNumber}}`) is also accepted.
 
 ## Acknowledgements
 

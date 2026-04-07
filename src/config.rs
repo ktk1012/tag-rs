@@ -1,6 +1,14 @@
 use std::env;
 use std::path::PathBuf;
 
+/// Convert Go template syntax to tag-rs syntax for backward compatibility.
+fn normalize_fmt_string(s: String) -> String {
+    s.replace("{{.Filename}}", "{file}")
+        .replace("{{.LineNumber}}", "{line}")
+        .replace("{{.ColumnNumber}}", "{column}")
+        .replace("{{.MatchIndex}}", "{index}")
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ModeKind {
     Grep,
@@ -35,7 +43,11 @@ impl Config {
         let alias_prefix =
             env::var("TAG_ALIAS_PREFIX").unwrap_or_else(|_| "e".to_string());
 
-        let cmd_fmt_string = env::var("TAG_CMD_FMT_STRING").ok();
+        let cmd_fmt_string = match mode {
+            ModeKind::Fd => env::var("TAG_CMD_FMT_STRING_FD").ok(),
+            ModeKind::Grep => env::var("TAG_CMD_FMT_STRING").ok(),
+        }
+        .map(normalize_fmt_string);
 
         let mut user_args: Vec<String> = env::args().skip(1).collect();
         let mut disable_tag = false;
