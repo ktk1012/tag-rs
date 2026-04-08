@@ -23,13 +23,5 @@
       "Bash(git push --force*)",
       "Bash(git reset --hard*)"
     ]
-  },
-  "hooks": {
-    "PreCommit": [
-      {
-        "command": "cargo fmt --check && cargo clippy -- -D warnings && cargo test",
-        "description": "Rust quality gates: format check, clippy, tests"
-      }
-    ]
   }
 }

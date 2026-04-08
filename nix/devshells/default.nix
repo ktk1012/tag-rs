@@ -37,6 +37,7 @@ pkgs.mkShellNoCC {
     pkgs.ripgrep
     pkgs.fd
     pkgs.silver-searcher
+    pkgs.prek
   ] ++ commandPackages;
 
   shellHook = ''
@@ -45,5 +46,6 @@ pkgs.mkShellNoCC {
     echo ""
     echo -e "${menu}"
     echo ""
+    prek install > /dev/null 2>&1 || true
   '';
 }
