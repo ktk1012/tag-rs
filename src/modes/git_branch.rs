@@ -7,6 +7,16 @@ use crate::alias::AliasWriter;
 use crate::config::SubcommandConfig;
 use crate::runner;
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum BranchKind {
+    /// Current branch (`*`)
+    Current,
+    /// Checked out in another worktree (`+`)
+    Worktree,
+    /// Regular branch
+    Regular,
+}
+
 pub fn run(config: SubcommandConfig) -> i32 {
     let mut git_args = vec!["branch".to_string()];
     git_args.extend(config.args.iter().cloned());
@@ -31,15 +41,21 @@ pub fn run(config: SubcommandConfig) -> i32 {
             Err(_) => break,
         };
 
-        let (is_current, branch_name) = parse_branch_line(&raw);
+        let (kind, branch_name) = parse_branch_line(&raw);
 
         if let Some(name) = branch_name {
             alias_writer.write_var(index, &name);
             let tag = format!("{}{}{}", "[".blue(), index.red(), "]".blue());
-            if is_current {
-                let _ = writeln!(out, "{tag} {} {}", "*".green(), name.green());
-            } else {
-                let _ = writeln!(out, "{tag}   {name}");
+            match kind {
+                BranchKind::Current => {
+                    let _ = writeln!(out, "{tag} {} {}", "*".green(), name.green());
+                }
+                BranchKind::Worktree => {
+                    let _ = writeln!(out, "{tag} {} {name}", "+".cyan());
+                }
+                BranchKind::Regular => {
+                    let _ = writeln!(out, "{tag}   {name}");
+                }
             }
             index += 1;
         } else {
@@ -58,21 +74,36 @@ pub fn run(config: SubcommandConfig) -> i32 {
     runner::exit_code(status)
 }
 
-/// Parse a `git branch` output line. Returns (is_current, branch_name).
-fn parse_branch_line(line: &str) -> (bool, Option<String>) {
-    let trimmed = line.trim();
-    if trimmed.is_empty() {
-        return (false, None);
+/// Parse a `git branch` output line.
+///
+/// `git branch` output format: each line starts with a 2-char indicator
+/// followed by a space and the branch name.
+///   `* ` — current branch
+///   `+ ` — checked out in another worktree
+///   `  ` — regular branch
+fn parse_branch_line(line: &str) -> (BranchKind, Option<String>) {
+    if line.len() < 3 {
+        return (BranchKind::Regular, None);
     }
 
-    if let Some(rest) = trimmed.strip_prefix("* ") {
-        // Detached HEAD: "* (HEAD detached at ...)"
-        if rest.starts_with('(') {
-            return (true, None);
+    let indicator = line.as_bytes()[0];
+    let name = line[2..].to_string();
+
+    if name.is_empty() {
+        return (BranchKind::Regular, None);
+    }
+
+    match indicator {
+        b'*' => {
+            // Detached HEAD: "* (HEAD detached at ...)"
+            if name.starts_with('(') {
+                (BranchKind::Current, None)
+            } else {
+                (BranchKind::Current, Some(name))
+            }
         }
-        (true, Some(rest.to_string()))
-    } else {
-        (false, Some(trimmed.to_string()))
+        b'+' => (BranchKind::Worktree, Some(name)),
+        _ => (BranchKind::Regular, Some(name)),
     }
 }
 
@@ -82,29 +113,43 @@ mod tests {
 
     #[test]
     fn parse_regular_branch() {
-        let (current, name) = parse_branch_line("  main");
-        assert!(!current);
+        let (kind, name) = parse_branch_line("  main");
+        assert_eq!(kind, BranchKind::Regular);
         assert_eq!(name.unwrap(), "main");
     }
 
     #[test]
     fn parse_current_branch() {
-        let (current, name) = parse_branch_line("* feature/xyz");
-        assert!(current);
+        let (kind, name) = parse_branch_line("* feature/xyz");
+        assert_eq!(kind, BranchKind::Current);
         assert_eq!(name.unwrap(), "feature/xyz");
     }
 
     #[test]
+    fn parse_worktree_branch() {
+        let (kind, name) = parse_branch_line("+ LAM-35/deploy-refactor");
+        assert_eq!(kind, BranchKind::Worktree);
+        assert_eq!(name.unwrap(), "LAM-35/deploy-refactor");
+    }
+
+    #[test]
     fn parse_detached_head() {
-        let (current, name) = parse_branch_line("* (HEAD detached at abc1234)");
-        assert!(current);
+        let (kind, name) = parse_branch_line("* (HEAD detached at abc1234)");
+        assert_eq!(kind, BranchKind::Current);
         assert!(name.is_none());
     }
 
     #[test]
     fn parse_empty_line() {
-        let (current, name) = parse_branch_line("");
-        assert!(!current);
+        let (kind, name) = parse_branch_line("");
+        assert_eq!(kind, BranchKind::Regular);
+        assert!(name.is_none());
+    }
+
+    #[test]
+    fn parse_short_line() {
+        let (kind, name) = parse_branch_line("* ");
+        assert_eq!(kind, BranchKind::Regular);
         assert!(name.is_none());
     }
 }
