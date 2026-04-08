@@ -1,6 +1,7 @@
 mod alias;
 mod ansi;
 mod config;
+mod expand;
 mod mode;
 mod modes;
 mod runner;
@@ -12,20 +13,12 @@ use is_terminal::IsTerminal;
 use owo_colors::OwoColorize;
 
 use alias::AliasWriter;
-use config::{Config, ModeKind};
+use config::{Command, Config, ModeKind};
 use mode::{Mode, ParserState};
 use modes::fd::FdMode;
 use modes::grep::GrepMode;
 
-fn run() -> i32 {
-    let config = match Config::from_env() {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("tag-rs: {e}");
-            return 1;
-        }
-    };
-
+fn run_search(config: Config) -> i32 {
     let is_tty = io::stdin().is_terminal() && io::stdout().is_terminal();
 
     let mode = match config.mode {
@@ -93,6 +86,23 @@ fn run() -> i32 {
     });
 
     runner::exit_code(status)
+}
+
+fn run() -> i32 {
+    let cmd = match Command::from_env() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("tag-rs: {e}");
+            return 1;
+        }
+    };
+
+    match cmd {
+        Command::Search(config) => run_search(config),
+        Command::GitStatus(sc) => modes::git_status::run(sc),
+        Command::GitBranch(sc) => modes::git_branch::run(sc),
+        Command::Expand(ec) => expand::run(ec),
+    }
 }
 
 fn main() {

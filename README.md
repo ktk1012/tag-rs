@@ -23,10 +23,49 @@ $ fd -e rs src/
 $ e3  # opens src/main.rs
 ```
 
+### Git status with numbering
+
+```
+$ gs
+# Staged
+[1] A. src/new.rs
+
+# Unstaged
+[2] .M src/config.rs
+
+# Untracked
+[3] ?? notes.txt
+
+$ git add $e2       # add src/config.rs by number
+$ e1                # open src/new.rs in editor
+```
+
+### Git branch with numbering
+
+```
+$ gb
+[1] * main
+[2]   feature/xyz
+[3]   fix/bug-42
+
+$ git checkout $e3  # checkout fix/bug-42
+```
+
+### Number expansion
+
+```
+$ tag-rs expand 1 3-5
+/absolute/path/to/a.rs /absolute/path/to/c.rs /absolute/path/to/d.rs /absolute/path/to/e.rs
+
+$ git add $(tag-rs expand 1 3-5)  # add files 1, 3, 4, 5
+```
+
 ## What's different from tag?
 
 - Rewritten in Rust
 - Supports `fd` in addition to `rg` and `ag` — tag file search results, not just grep matches
+- Git integration: numbered `git status` (`gs`) and `git branch` (`gb`) with numeric file/branch references
+- Number expansion: `tag-rs expand 1 3-5` resolves numbered references to paths for use with any command
 - Simpler template syntax: `{file}`, `{line}`, `{column}` instead of `{{.Filename}}`, `{{.LineNumber}}`, `{{.ColumnNumber}}`
 
 ## Installation
@@ -77,13 +116,22 @@ cargo install --path .
 
 ```zsh
 if (( $+commands[tag-rs] )); then
+  _tag_source() { source ${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$} 2>/dev/null }
+
   # grep mode (ripgrep)
-  tag() { command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$} 2>/dev/null }
+  tag() { command tag-rs "$@"; _tag_source }
   alias rg=tag
 
   # file find mode (fd)
-  tagfd() { TAG_SEARCH_PROG=fd command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$} 2>/dev/null }
+  tagfd() { TAG_SEARCH_PROG=fd command tag-rs "$@"; _tag_source }
   alias fd=tagfd
+
+  # git status / branch with numbering
+  gs() { command tag-rs gs "$@"; _tag_source }
+  gb() { command tag-rs gb "$@"; _tag_source }
+
+  # git add by number (e.g. ga 1 3-5)
+  ga() { git add $(command tag-rs expand "$@") }
 
   trap 'rm -f "${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$}"' EXIT
 fi
@@ -93,13 +141,22 @@ fi
 
 ```bash
 if command -v tag-rs &>/dev/null; then
+  _tag_source() { source ${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$} 2>/dev/null; }
+
   # grep mode (ripgrep)
-  tag() { command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$} 2>/dev/null; }
+  tag() { command tag-rs "$@"; _tag_source; }
   alias rg=tag
 
   # file find mode (fd)
-  tagfd() { TAG_SEARCH_PROG=fd command tag-rs "$@"; source ${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$} 2>/dev/null; }
+  tagfd() { TAG_SEARCH_PROG=fd command tag-rs "$@"; _tag_source; }
   alias fd=tagfd
+
+  # git status / branch with numbering
+  gs() { command tag-rs gs "$@"; _tag_source; }
+  gb() { command tag-rs gb "$@"; _tag_source; }
+
+  # git add by number (e.g. ga 1 3-5)
+  ga() { git add $(command tag-rs expand "$@"); }
 
   trap 'rm -f "${TAG_ALIAS_FILE:-/tmp/tag_aliases_$$}"' EXIT
 fi
@@ -108,17 +165,34 @@ fi
 ### fish
 
 ```fish
-function tag
+function __tag_source
     set -q TAG_ALIAS_FILE; or set -l TAG_ALIAS_FILE /tmp/tag_aliases_$fish_pid
-    command tag-rs $argv; and source $TAG_ALIAS_FILE 2>/dev/null
+    source $TAG_ALIAS_FILE 2>/dev/null
+end
+
+function tag
+    command tag-rs $argv; and __tag_source
 end
 alias rg tag
 
 function tagfd
-    set -q TAG_ALIAS_FILE; or set -l TAG_ALIAS_FILE /tmp/tag_aliases_$fish_pid
-    TAG_SEARCH_PROG=fd command tag-rs $argv; and source $TAG_ALIAS_FILE 2>/dev/null
+    TAG_SEARCH_PROG=fd command tag-rs $argv; and __tag_source
 end
 alias fd tagfd
+
+# git status / branch with numbering
+function gs
+    command tag-rs gs $argv; and __tag_source
+end
+
+function gb
+    command tag-rs gb $argv; and __tag_source
+end
+
+# git add by number (e.g. ga 1 3-5)
+function ga
+    git add (command tag-rs expand $argv)
+end
 
 function __tag_cleanup --on-event fish_exit
     rm -f {$TAG_ALIAS_FILE,/tmp/tag_aliases_$fish_pid}
