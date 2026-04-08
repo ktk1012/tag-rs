@@ -11,10 +11,7 @@ impl FdMode {
     }
 
     pub fn extra_args(&self, config: &Config) -> Vec<String> {
-        let has_color = config
-            .user_args
-            .iter()
-            .any(|a| a.starts_with("--color"));
+        let has_color = config.user_args.iter().any(|a| a.starts_with("--color"));
         if has_color {
             vec![]
         } else {

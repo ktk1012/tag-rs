@@ -31,10 +31,8 @@ impl AliasWriter {
                 &result.column.map(|n| n.to_string()).unwrap_or_default(),
             );
 
-        self.buf.push_str(&format!(
-            "alias {}{index}='{cmd}'\n",
-            self.prefix
-        ));
+        self.buf
+            .push_str(&format!("alias {}{index}='{cmd}'\n", self.prefix));
     }
 
     pub fn flush_to_file(&self, path: &Path) -> std::io::Result<()> {

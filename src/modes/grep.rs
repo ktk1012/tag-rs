@@ -18,16 +18,9 @@ impl GrepMode {
 
     pub fn extra_args(&self, config: &Config) -> Vec<String> {
         match config.search_prog.as_str() {
-            "ag" => vec![
-                "--group".into(),
-                "--color".into(),
-                "--column".into(),
-            ],
+            "ag" => vec!["--group".into(), "--color".into(), "--column".into()],
             "rg" => {
-                let has_color = config
-                    .user_args
-                    .iter()
-                    .any(|a| a.starts_with("--color"));
+                let has_color = config.user_args.iter().any(|a| a.starts_with("--color"));
                 let mut args = vec!["--heading".into(), "--column".into()];
                 if !has_color {
                     args.push("--color".into());

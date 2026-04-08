@@ -27,8 +27,7 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> Result<Self, String> {
-        let search_prog =
-            env::var("TAG_SEARCH_PROG").unwrap_or_else(|_| "rg".to_string());
+        let search_prog = env::var("TAG_SEARCH_PROG").unwrap_or_else(|_| "rg".to_string());
 
         let mode = match search_prog.as_str() {
             "rg" | "ag" => ModeKind::Grep,
@@ -43,8 +42,7 @@ impl Config {
                 PathBuf::from(format!("/tmp/tag_aliases_{ppid}"))
             });
 
-        let alias_prefix =
-            env::var("TAG_ALIAS_PREFIX").unwrap_or_else(|_| "e".to_string());
+        let alias_prefix = env::var("TAG_ALIAS_PREFIX").unwrap_or_else(|_| "e".to_string());
 
         let cmd_fmt_string = match mode {
             ModeKind::Fd => env::var("TAG_CMD_FMT_STRING_FD").ok(),

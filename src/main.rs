@@ -42,19 +42,17 @@ fn run() -> i32 {
     all_args.extend(config.user_args.iter().cloned());
 
     if config.disable_tag || !is_tty {
-        let status = runner::passthrough(&config.search_prog, &all_args)
-            .unwrap_or_else(|e| {
-                eprintln!("tag-rs: failed to run {}: {e}", config.search_prog);
-                process::exit(1);
-            });
-        return runner::exit_code(status);
-    }
-
-    let mut child = runner::spawn_piped(&config.search_prog, &all_args)
-        .unwrap_or_else(|e| {
+        let status = runner::passthrough(&config.search_prog, &all_args).unwrap_or_else(|e| {
             eprintln!("tag-rs: failed to run {}: {e}", config.search_prog);
             process::exit(1);
         });
+        return runner::exit_code(status);
+    }
+
+    let mut child = runner::spawn_piped(&config.search_prog, &all_args).unwrap_or_else(|e| {
+        eprintln!("tag-rs: failed to run {}: {e}", config.search_prog);
+        process::exit(1);
+    });
 
     let stdout = child.stdout.take().unwrap();
     let reader = BufReader::new(stdout);
@@ -78,12 +76,7 @@ fn run() -> i32 {
 
         if let Some(result) = mode.parse_line(&raw, &stripped, &mut state) {
             alias_writer.write_alias(index, &result);
-            let tag = format!(
-                "{}{}{} ",
-                "[".blue(),
-                index.red(),
-                "]".blue(),
-            );
+            let tag = format!("{}{}{} ", "[".blue(), index.red(), "]".blue(),);
             let _ = write!(out, "{tag}");
             let _ = writeln!(out, "{raw}");
             index += 1;
