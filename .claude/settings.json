@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo build*)",
+      "Bash(cargo test*)",
+      "Bash(cargo clippy*)",
+      "Bash(cargo fmt*)",
+      "Bash(cargo run*)",
+      "Bash(cargo check*)",
+      "Bash(nix build*)",
+      "Bash(nix develop*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git add*)",
+      "Bash(ls*)",
+      "Bash(mkdir*)"
+    ],
+    "deny": [
+      "Bash(cargo publish*)",
+      "Bash(rm -rf*)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)"
+    ]
+  },
+  "hooks": {
+    "PreCommit": [
+      {
+        "command": "cargo fmt --check && cargo clippy -- -D warnings && cargo test",
+        "description": "Rust quality gates: format check, clippy, tests"
+      }
+    ]
+  }
+}
