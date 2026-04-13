@@ -13,8 +13,11 @@ pub fn run(config: ExpandConfig) -> i32 {
     let vars = match load_vars(&config.alias_file, &config.alias_prefix) {
         Ok(v) => v,
         Err(e) => {
-            eprintln!("tag-rs expand: {e}");
-            return 1;
+            if needs_expansion(&config.args) {
+                eprintln!("tag-rs expand: {e}");
+                return 1;
+            }
+            HashMap::new()
         }
     };
 
@@ -89,6 +92,12 @@ fn expand_args(args: &[String], vars: &HashMap<usize, String>) -> Result<Vec<Str
     }
 
     Ok(result)
+}
+
+/// Check if any argument requires numeric expansion (is a number or range).
+fn needs_expansion(args: &[String]) -> bool {
+    args.iter()
+        .any(|a| a.parse::<usize>().is_ok() || parse_range(a).is_some())
 }
 
 /// Parse a range like "3-5" into (3, 5). Returns None if not a range.
@@ -208,5 +217,38 @@ mod tests {
         assert_eq!(vars.len(), 2);
 
         let _ = fs::remove_file(&path);
+    }
+
+    #[test]
+    fn needs_expansion_with_numbers() {
+        let args = vec!["3".to_string()];
+        assert!(needs_expansion(&args));
+    }
+
+    #[test]
+    fn needs_expansion_with_range() {
+        let args = vec!["2-4".to_string()];
+        assert!(needs_expansion(&args));
+    }
+
+    #[test]
+    fn needs_expansion_without_numbers() {
+        let args = vec!["main".to_string(), "--flag".to_string()];
+        assert!(!needs_expansion(&args));
+    }
+
+    #[test]
+    fn needs_expansion_mixed() {
+        let args = vec!["main".to_string(), "3".to_string()];
+        assert!(needs_expansion(&args));
+    }
+
+    #[test]
+    fn expand_passthrough_without_alias_file() {
+        // When no vars loaded, non-numeric args should pass through
+        let vars = HashMap::new();
+        let args = vec!["main".to_string(), "-c".to_string()];
+        let result = expand_args(&args, &vars).unwrap();
+        assert_eq!(result, vec!["main", "-c"]);
     }
 }
